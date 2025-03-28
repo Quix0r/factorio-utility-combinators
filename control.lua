@@ -1,85 +1,4 @@
----@param signal SignalFilter.0
----@param value int32
----@return LogisticFilter
-local function signal_value(signal, value)
-  local quality = "normal"
-  if script.active_mods["quality"] and signal.quality then
-      quality = signal.quality
-  end
-
-  return {
-    value = {
-      type       = signal.type or "item",
-      name       = signal.name,
-      quality    = quality,
-      comparator = "=",
-    },
-    min = math.min(math.max(value, -0x80000000), 0x7fffffff),
-  }
-end
-
----@param target UCControl
----@param filters LogisticFilter[]
----@return boolean
-local function write_control(target, filters)
-  local entity = target.entity
-  if not entity.valid then return false end
-
-  local control = target.control
-  if not (control and control.valid) then
-    control = entity.get_or_create_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
-    target.control = control
-  end
-
-  --TODO: check/force exactly one unnamed section
-  control.enabled = true
-  control.sections[1].filters = filters or {}
-  return true
-end
-
-local function UpdateBonuses()
-  for _,force in pairs(game.forces) do
-    storage.bonusframe[force.index] = {
-      signal_value({name="lab",type="item"},force.laboratory_productivity_bonus),
-      signal_value({name="logistic-robot",type="item"},force.worker_robots_storage_bonus),
-      signal_value({name="fast-inserter",type="item"},force.inserter_stack_size_bonus),
-      signal_value({name="bulk-inserter",type="item"},force.bulk_inserter_capacity_bonus),
-      signal_value({name="turbo-transport-belt",type="item"},force.belt_stack_size_bonus),
-      signal_value({name="toolbelt-equipment",type="item"},force.character_inventory_slots_bonus),
-      signal_value({name="big-mining-drill",type="item"},force.mining_drill_productivity_bonus * 100),
-      signal_value({name="locomotive",type="item"},force.train_braking_force_bonus),
-      signal_value({name="signal-heart",type="virtual"},force.character_health_bonus),
-      signal_value({name="signal-B",type="virtual"},force.character_build_distance_bonus),
-      signal_value({name="signal-D",type="virtual"},force.character_item_drop_distance_bonus),
-      signal_value({name="signal-R",type="virtual"},force.character_resource_reach_distance_bonus),
-      signal_value({name="signal-I",type="virtual"},force.character_item_pickup_distance_bonus),
-      signal_value({name="signal-L",type="virtual"},force.character_loot_pickup_distance_bonus),
-      signal_value({name="signal-F",type="virtual"},force.maximum_following_robot_count),
-    }
-  end
-end
-
-local function UpdateResearch()
-  ---@type {[integer]:LogisticFilter[]}
-  local newframes = {}
-  for _,force in pairs(game.forces) do
-
-    if force.current_research then
-      ---@type LogisticFilter[]
-      local frame = {
-        signal_value({name="signal-info",type="virtual"},math.floor(game.forces[force.index].research_progress * 100)),
-        signal_value({name="signal-stack-size",type="virtual"},force.current_research.research_unit_count),
-        signal_value({name="signal-T",type="virtual"},force.current_research.research_unit_energy),
-      }
-
-      for _,item in pairs(force.current_research.research_unit_ingredients) do
-        frame[#frame+1] = signal_value(item--[[@as SignalFilter.0]],item.amount)
-      end
-      newframes[force.index] = frame
-    end
-  end
-  storage.researchframe = newframes
-end
+require("lua/functions")
 
 script.on_event({
   defines.events.on_research_started,
@@ -93,14 +12,14 @@ script.on_event({
   UpdateBonuses()
   UpdateResearch()
 
-  for n,rcc in pairs(storage.researchcc) do
-    if not (rcc.entity.valid and write_control(rcc, storage.researchframe[rcc.entity.force.index])) then
-      storage.researchcc[n] = nil
+  for n, research_control in pairs(storage.research_control) do
+    if not (research_control.entity.valid and write_control(research_control, storage.research_log_filter[research_control.entity.force.index])) then
+      storage.research_control[n] = nil
     end
   end
-  for n,bcc in pairs(storage.bonuscc) do
-    if not (bcc.entity.valid and write_control(bcc, storage.bonusframe[bcc.entity.force.index])) then
-      storage.bonuscc[n] = nil
+  for n, bonus_control in pairs(storage.bonus_control) do
+    if not (bonus_control.entity.valid and write_control(bonus_control, storage.bonus_log_filter[bonus_control.entity.force.index])) then
+      storage.bonus_control[n] = nil
     end
   end
 end)
@@ -109,24 +28,24 @@ end)
 local onBuilt = {
   ["bonus-combinator"] = function(entity)
     entity.operable = false
-    local bcc = {entity=entity}
-    storage.bonuscc[entity.unit_number] = bcc
-    write_control(bcc, storage.bonusframe[entity.force.index])
+    local bonus_control = {entity=entity}
+    storage.bonus_control[entity.unit_number] = bonus_control
+    write_control(bonus_control, storage.bonus_log_filter[entity.force.index])
   end,
   ["location-combinator"] = function(entity)
     entity.operable=false
-    local lcc = {entity=entity}
-    write_control(lcc, {
-      signal_value({name="signal-X",type="virtual"},math.floor(entity.position.x)),
-      signal_value({name="signal-Y",type="virtual"},math.floor(entity.position.y)),
-      signal_value({name="signal-Z",type="virtual"},entity.surface.index),
+    local location_control = {entity=entity}
+    write_control(location_control, {
+      signal_value({name="signal-X", type="virtual"},math.floor(entity.position.x)),
+      signal_value({name="signal-Y", type="virtual"},math.floor(entity.position.y)),
+      signal_value({name="signal-Z", type="virtual"},entity.surface.index),
     })
   end,
   ["research-combinator"] = function(entity)
     entity.operable = false
-    local rcc = {entity=entity}
-    storage.researchcc[entity.unit_number] = rcc
-    write_control(rcc, storage.researchframe[entity.force.index])
+    local research_control = {entity=entity}
+    storage.research_control[entity.unit_number] = research_control
+    write_control(research_control, storage.research_log_filter[entity.force.index])
   end,
 }
 
@@ -136,16 +55,16 @@ local onBuilt = {
 
 local function on_init()
   ---@class (exact) UCStorage
-  ---@field bonuscc {[integer]:UCControl} unit_number -> entity,control
-  ---@field bonusframe {[integer]:LogisticFilter[]} forceid -> data
-  ---@field researchcc {[integer]:UCControl} unit_number -> entity,control
-  ---@field researchframe {[integer]:LogisticFilter[]} forceid -> data
+  ---@field bonus_control {[integer]:UCControl} unit_number -> entity,control
+  ---@field bonus_log_filter {[integer]:LogisticFilter[]} forceid -> data
+  ---@field research_control {[integer]:UCControl} unit_number -> entity,control
+  ---@field research_log_filter {[integer]:LogisticFilter[]} forceid -> data
   storage = {
-    bonuscc = {},
-    bonusframe = {},
+    bonus_control = {},
+    bonus_log_filter = {},
 
-    researchcc = {},
-    researchframe = {},
+    research_control = {},
+    research_log_filter = {},
   }
 
   UpdateBonuses()
@@ -172,9 +91,9 @@ end)
 
 script.on_nth_tick(60, function()
   UpdateResearch()
-  for n,rcc in pairs(storage.researchcc) do
-    if not (rcc.entity.valid and write_control(rcc, storage.researchframe[rcc.entity.force.index])) then
-      storage.researchcc[n] = nil
+  for n, research_control in pairs(storage.research_control) do
+    if not (research_control.entity.valid and write_control(research_control, storage.research_log_filter[research_control.entity.force.index])) then
+      storage.research_control[n] = nil
     end
   end
 end)

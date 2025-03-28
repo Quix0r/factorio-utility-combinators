@@ -1,14 +1,15 @@
 {
-  "name": "utility-combinators",
-  "version": "2.0.1",
+  "name": "utility-combinators-quality",
+  "version": "2.0.2",
   "factorio_version": "2.0",
   "title": "Utility Combinators",
   "author": "roland77, justarandomgeek",
   "homepage": "",
-  "description": "A set of general utility combinators. Includes: Location Combinators, Bonus Combinators, Research Combinators",
+  "description": "This fork implements full quality support for research combinator A set of general utility combinators. Includes: location combinators, bonus combinators, research combinators",
   "dependencies": [
     "base >= 2.0.42",
-    "?quality"
+    "?quality",
+    "!utility-combinators"
   ],
   "package": {
     "sync_portal_details": true

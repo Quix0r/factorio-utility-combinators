@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.2
+Date: 28-03-2025
+  Changes:
+    - moved functions to lua/functions.lua, don't stuff all in one file only
+    - WIP: added support for adding all science packs again but with increasing quality
+      they last longer then and of course with higher quality intermediate products, you
+      also need science packs in higher quality
+---------------------------------------------------------------------------------------------------
 Version: 2.0.1
 Date: 27-03-2025
   Changes:
