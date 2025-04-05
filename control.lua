@@ -140,13 +140,10 @@ local function on_init()
   ---@field bonusframe {[integer]:LogisticFilter[]} forceid -> data
   ---@field researchcc {[integer]:UCControl} unit_number -> entity,control
   ---@field researchframe {[integer]:LogisticFilter[]} forceid -> data
-  storage = {
-    bonuscc = {},
-    bonusframe = {},
-
-    researchcc = {},
-    researchframe = {},
-  }
+  storage.bonuscc       = {}
+  storage.bonusframe    = {}
+  storage.researchcc    = {}
+  storage.researchframe = {}
 
   UpdateBonuses()
   UpdateResearch()

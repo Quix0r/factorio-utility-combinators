@@ -1,6 +1,6 @@
 {
-  "name": "utility-combinators",
-  "version": "2.0.1",
+  "name": "utility-combinators-quality",
+  "version": "2.0.2",
   "factorio_version": "2.0",
   "title": "Utility Combinators",
   "author": "roland77, justarandomgeek",
@@ -8,7 +8,8 @@
   "description": "A set of general utility combinators. Includes: Location Combinators, Bonus Combinators, Research Combinators",
   "dependencies": [
     "base >= 2.0.42",
-    "?quality"
+    "?quality",
+    "!utility-combinators"
   ],
   "package": {
     "sync_portal_details": true
