@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.2
+Date: 05-04-2025
+  Fixes:
+    - don't set `storage` or any other Factorio's globals, better set elements instead instead
+---------------------------------------------------------------------------------------------------
 Version: 2.0.1
 Date: 27-03-2025
   Changes:
@@ -7,4 +12,4 @@ Date: 27-03-2025
     - set minimum version for "base"
     - added this changelog.txt (add older versions below this record, newer above)
     - added .gitattributes
---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
